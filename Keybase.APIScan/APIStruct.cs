@@ -80,7 +80,11 @@ namespace Keybase.APIScan
 		}
 
 
-		private static IEnumerable<IEnumerable<string>> JoinGroups (GroupCollection collection, int from, int count)
+		private static IEnumerable<IEnumerable<string>> JoinGroups (
+			[NotNull] GroupCollection collection,
+			int from,
+			int count
+		)
 			=> Enumerable.Range (0, collection[from].Captures.Count).
 				Select (
 					captureIndex => collection.Skip<Group> (from).Take (count).

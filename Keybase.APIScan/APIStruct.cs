@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
@@ -24,8 +25,19 @@ namespace Keybase.APIScan
 
 		public class Field
 		{
+			private const string kOmitEmptyTag = "omitempty";
+
+
 			public string
 				Name = default,
+				Type = default,
+				JSONName = default;
+			public bool
+				Array = false,
+				JSONOmitEmpty = false;
+
+
+			private string
 				TypeString = default,
 				CodecString = default,
 				JSONString = default;
@@ -35,6 +47,7 @@ namespace Keybase.APIScan
 			{
 				Field result = new Field ();
 
+				// Read the four source strings
 				int index = 0;
 				foreach (string value in source)
 				{
@@ -47,17 +60,48 @@ namespace Keybase.APIScan
 					}
 				}
 
+				// Parse name and omit empty flag from json string
+				string jsonString = result.JSONString;
+				int split = jsonString.IndexOf (',');
+				if (split > 0)
+				{
+					result.JSONName = jsonString.Substring (0, split);
+					result.JSONOmitEmpty = jsonString.Substring (split + 1).Trim ().
+						Equals (kOmitEmptyTag, StringComparison.InvariantCultureIgnoreCase);
+				}
+				else
+				{
+					result.JSONName = jsonString;
+				}
+				result.JSONName = result.JSONName.Trim ();
+
+				// Parse array and pointer markers from type string
+				string typeString = result.TypeString;
+				if (typeString.StartsWith ("[]"))
+				{
+					result.Array = true;
+					result.Type = typeString.Substring (2);
+				}
+				else if (typeString[0] == '*')
+				{
+					result.Type = typeString.Substring (1);
+				}
+				else
+				{
+					result.Type = typeString;
+				}
+
 				return result;
 			}
 
 
 			public override string ToString ()
-				=> $"{TypeString} {Name} ({CodecString}, {JSONString})";
+				=> $"{Type}" + (Array ? "[]" : "") + $" {Name} ({JSONName}, omit empty: {JSONOmitEmpty})";
 		}
 
 
 		public string
-			Comment = default,
+			Description = default,
 			Name = default;
 		public readonly List<Field> Fields = new List<Field> ();
 
@@ -70,7 +114,7 @@ namespace Keybase.APIScan
 		{
 			APIStruct result = new APIStruct()
 			{
-				Comment = JoinOrDefault (collection[1].Captures, default, " "),
+				Description = JoinOrDefault (collection[1].Captures, default, " "),
 				Name = JoinOrDefault (collection[2].Captures)
 			};
 
@@ -112,7 +156,7 @@ namespace Keybase.APIScan
 				string.Format (
 					"{0}{1}:{2}",
 					Name,
-					string.IsNullOrEmpty (Comment) ? "" : $" ({Comment})",
+					string.IsNullOrEmpty (Description) ? "" : $" ({Description})",
 					Fields.Select (f => f.ToString ()).
 						Aggregate ("", (all, current) => all + "\n\t" + current)
 				);

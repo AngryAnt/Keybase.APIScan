@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Reflection;
+using Keybase.APIScan.Jekyll;
 
 
 namespace Keybase.APIScan
@@ -25,7 +26,7 @@ namespace Keybase.APIScan
 				Log.Message ("Processing {0}:", fileName);
 				foreach (APIStruct result in APIStruct.Read (File.ReadAllText (fileName)))
 				{
-					Log.Message (result.ToString ());
+					Log.Message (result.ToJekyll ());
 				}
 			}
 		}
